@@ -38,5 +38,21 @@ tail(covariates$var3[order(covariates$var3)], 500)
 eigen_cov = eigen(var(covariates))
 eigen_cov$values
 
-
-
+library(psych)
+principal(covariates)
+duplicates = matrix(0, 30, 2)
+k = 1
+for(i in 1:334){
+  for(j in (i+1):335){
+    if(all(covariates[,i] == covariates[,j])){
+      duplicates[k,1] = i
+      duplicates[k,2] = j
+      k = k + 1
+    }
+  }
+}
+duplicates = duplicates[1:29,]
+covariates = covariates[,-duplicates[,2]]
+pca <- prcomp(covariates, center = TRUE, scale. = TRUE)
+summary(pca)
+plot(pca)
