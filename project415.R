@@ -69,14 +69,16 @@ test_obs = -train_obs
 train = credit[train_obs,]
 test = credit[test_obs,]
 
-step(glm(Default ~ ., data = credit, family = "binomial"))
+m = step(glm(Default ~ ., data = credit, family = "binomial"))
+test_preds = predict(m, test, type = "response")
+head(test_preds)
+test_preds[test_preds >= 0.3] = 1
+test_preds[test_preds < 0.3] = 0
+mean(test_preds != test$Default)
+mean(test_preds[test$Default == 1] != 1)
+mean(test_preds[test$Default == 0] != 0)
 
 
-
-
-
-
-
-
+#Visualization of continuous variables
 
 
