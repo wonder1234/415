@@ -70,6 +70,39 @@ train = credit[train_obs,]
 test = credit[test_obs,]
 
 m = step(glm(Default ~ ., data = credit, family = "binomial"))
+# Step:  AIC=28293.17
+# Default ~ Cred_Amnt + Gender + Education + Married + Repay_9 + 
+#   Repay_8 + Repay_7 + Repay_6 + Repay_5 + Bill_8 + Payment_9 + 
+#   Payment_8 + Payment_7 + Payment_6 + Payment_5
+# 
+# Df Deviance   AIC
+# <none>            28247 28293
+# - Cred_Amnt  1    28251 28295
+# - Payment_7  1    28251 28295
+# - Bill_8     1    28251 28295
+# - Payment_5  1    28253 28297
+# - Payment_8  1    28260 28304
+# - Repay_5    1    28261 28305
+# - Gender     1    28263 28307
+# - Repay_8    1    28272 28316
+# - Repay_7    1    28279 28323
+# - Repay_6    1    28286 28330
+# - Payment_6  1    28289 28333
+# - Married    3    28296 28336
+# - Payment_9  1    28295 28339
+# - Education  6    28311 28345
+# - Repay_9    1    28934 28978
+test_preds = predict(m, test, type = "response")
+head(test_preds)
+test_preds[test_preds >= 0.3] = 1
+test_preds[test_preds < 0.3] = 0
+mean(test_preds != test$Default)
+mean(test_preds[test$Default == 1] != 1)
+mean(test_preds[test$Default == 0] != 0)
+
+
+#Visualization of continuous variables
+
 test_preds = predict(m, test, type = "response")
 head(test_preds)
 test_preds[test_preds >= 0.3] = 1
