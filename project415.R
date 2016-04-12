@@ -148,4 +148,66 @@ mean(test_preds != test$default.payment.next.month)
 mean(test_preds[test$default.payment.next.month == 1] != 1)
 mean(test_preds[test$default.payment.next.month == 0] != 0)
 
+##################### LDA ######################
+library(MASS)
+lda.fit1=lda(Default ~ Cred_Amnt + Gender + Education + Married + Repay_9 + Bill_7 + 
+         Bill_4 + Payment_9 + Payment_8 + Payment_4,data=train)
+lda.fit1
+# Call:
+#   lda(Default ~ Cred_Amnt + Gender + Education + Married + Repay_9 + 
+#         Bill_7 + Bill_4 + Payment_9 + Payment_8 + Payment_4, data = train)
+# 
+# Prior probabilities of groups:
+#   0      1 
+# 0.7766 0.2234 
+# 
+# Group means:
+#   Cred_Amnt   Gender2 Education1 Education2 Education3  Married1  Married2  Repay_91
+# 0  177670.4 0.6174994  0.3626062  0.4646536  0.1542622 0.4485578 0.5386943 0.1050734
+# 1  130590.3 0.5669203  0.2987914  0.5067144  0.1893465 0.4876902 0.4986571 0.1929275
+# Repay_92    Repay_93     Repay_94     Repay_95     Repay_96    Repay_97     Repay_98
+# 0 0.03425187 0.003283544 0.0009013649 0.0005150657 0.0001931496 0.000000000 0.0002575328
+# 1 0.27775291 0.038943599 0.0080572963 0.0020143241 0.0011190689 0.001119069 0.0017905103
+# Bill_7   Bill_4 Payment_9 Payment_8 Payment_4
+# 0 47685.61 39092.87  6306.659  6630.712  5792.977
+# 1 45230.58 38133.16  3282.307  3264.247  3461.305
+# 
+# Coefficients of linear discriminants:
+#   LD1
+# Cred_Amnt  -1.462707e-06
+# Gender2    -1.574946e-01
+# Education1  6.965580e-01
+# Education2  7.159993e-01
+# Education3  7.410100e-01
+# Married1    1.499651e-01
+# Married2   -2.038142e-02
+# Repay_91    1.185175e+00
+# Repay_92    3.267238e+00
+# Repay_93    3.652480e+00
+# Repay_94    3.307964e+00
+# Repay_95    2.166807e+00
+# Repay_96    2.782393e+00
+# Repay_97    5.061969e+00
+# Repay_98    2.975444e+00
+# Bill_7      5.781399e-07
+# Bill_4     -2.477438e-07
+# Payment_9  -3.494396e-06
+# Payment_8  -1.860765e-06
+# Payment_4  -1.047642e-06
+plot(lda.fit1)
 
+lda.pred=predict(lda.fit1,test)
+names(lda.pred)
+lda.class=lda.pred$class
+Default.test=test$Default
+table(lda.class,Default.test)
+
+lda.pred=predict(lda.fit,test[,-24])
+mean(lda.pred$class!=test[,24])
+#           Default.test
+# lda.class    0    1
+          # 0 7492 1469
+          # 1  340  699
+# error rate = (340+1469)/(7492+1469+340+699)=0.1809
+# 340/(340+7492)= 0.043
+# 1569/(1468+1469)= 0.534
