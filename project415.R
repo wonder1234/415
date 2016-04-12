@@ -27,21 +27,20 @@ levels(credit$Repay_7)[1:3] = c("0", "0", "0")
 levels(credit$Repay_6)[1:3] = c("0", "0", "0")
 levels(credit$Repay_5)[1:3] = c("0", "0", "0")
 levels(credit$Repay_5)[1:3] = c("0", "0", "0")
+levels(credit$Repay_4)[1:3] = c("0", "0", "0")
+
 
 levels(credit$Education) = c("0", "1", "2", "3", "0", "0", "0")
 levels(credit$Married) = c("3", "1", "2", "3")
 levels(credit$Default)
 
-attach(credit)
-plot(density(Age))
-
-#Gender
+#Default Rate By Gender
 summary(credit$Default[credit$Gender == 1])[[2]]/(summary(credit$Default[credit$Gender == 1])[[1]] + summary(credit$Default[credit$Gender == 1])[[2]])
 #0.242
 summary(credit$Default[credit$Gender == 2])[[2]]/(summary(credit$Default[credit$Gender == 2])[[1]] + summary(credit$Default[credit$Gender == 2])[[2]])
 #0.208
 
-#Education
+#Default by Education
 #Graduate School
 summary(credit$Default[credit$Education == 1])[[2]]/(summary(credit$Default[credit$Education == 1])[[1]] + summary(credit$Default[credit$Education == 1])[[2]])
 #University
@@ -51,7 +50,7 @@ summary(credit$Default[credit$Education == 3])[[2]]/(summary(credit$Default[cred
 #Other
 summary(credit$Default[credit$Education == 4])[[2]]/(summary(credit$Default[credit$Education == 4])[[1]] + summary(credit$Default[credit$Education == 4])[[2]])
 
-#Only 123 people with "other" education
+#Only 468 people with "other" education
 
 
 set.seed(123)
@@ -138,76 +137,176 @@ summary(m)
 # AIC: 17503
 # 
 # Number of Fisher Scoring iterations: 12
+
+#Further cleaning of data. There appear to be some categories with very few observations
+summary(credit$Repay_9)
+summary(credit$Repay_8)
+summary(credit$Repay_7)
+summary(credit$Repay_6)
+summary(credit$Repay_5)
+summary(credit$Repay_4)
+
+#Releveling repayment variables
+levels(credit$Repay_9) = c("0", "1", "2", "3", "4", "4","4", "4", "4")
+levels(credit$Repay_8) = c("0", "1", "2", "3", "4", "4","4", "4", "4")
+levels(credit$Repay_7) = c("0", "1", "2", "3", "4", "4","4", "4", "4")
+levels(credit$Repay_6) = c("0", "1", "2", "3", "4", "4","4", "4", "4")
+levels(credit$Repay_5) = c("0", "1", "2", "3", "4", "4","4", "4", "4")
+levels(credit$Repay_4) = c("0", "1", "2", "3", "4", "4","4", "4", "4")
+
+R9 = table(credit$Repay_9, credit$Default)
+R8 = table(credit$Repay_8, credit$Default)
+R7 = table(credit$Repay_7, credit$Default)
+R6 = table(credit$Repay_6, credit$Default)
+R5 = table(credit$Repay_5, credit$Default)
+R4 = table(credit$Repay_4, credit$Default)
+
+#Testing difference between categories of repayment vars
+chisq.test(R9[4:5,])
+chisq.test(R9[3:4,])
+chisq.test(R9[1:2,])
+chisq.test(R9[2:3,])
+#All are significantly different
+chisq.test(R8[4:5,])
+#not significantly different
+chisq.test(R8[3:4,])
+chisq.test(R8[1:2,])
+#not significantly different
+chisq.test(R8[2:3,])
+#All are significantly different
+chisq.test(R7[4:5,])
+chisq.test(R7[3:4,])
+chisq.test(R7[1:2,])
+chisq.test(R7[2:3,])
+#All are significantly different
+
+
+quantile(credit$Payment_9, c(0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.95, 0.975, 0.99, 1))
+quantile(credit$Payment_8, c(0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.95, 0.975, 0.99, 1))
+quantile(credit$Payment_7, c(0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.95, 0.975, 0.99, 1))
+quantile(credit$Payment_6, c(0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.95, 0.975, 0.99, 1))
+quantile(credit$Payment_5, c(0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.95, 0.975, 0.99, 1))
+quantile(credit$Payment_4, c(0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.95, 0.975, 0.99, 1))
+#Perhaps eliminate top 1% of observations for each of these?
+no_outliers = credit[credit$Payment_9 < 35000,]
+no_outliers = no_outliers[no_outliers$Payment_8 < 35000, ]
+no_outliers = no_outliers[no_outliers$Payment_7 < 35000, ]
+no_outliers = no_outliers[no_outliers$Payment_6 < 35000, ]
+no_outliers = no_outliers[no_outliers$Payment_5 < 35000, ]
+no_outliers = no_outliers[no_outliers$Payment_4 < 35000, ]
+set.seed(123)
+trainobs2 = sample(1:nrow(no_outliers), 15000, rep = F)
+train2 = no_outliers[trainobs2,]
+test2 = no_outliers[-trainobs2,]
+m_no_outliers = step(glm(Default ~., data = train2, family = "binomial"))
+summary(m_no_outliers)
+
 library(pROC)
-auc(train$Default, fitted(m))
+auc(train2$Default, fitted(m_no_outliers), type = "response")
+roc = plot.roc(x = train2$Default, fitted(m_no_outliers), print.auc = T)
+roc = plot.roc(x = test2$Default, predict(m_no_outliers, test2, type = "response"), print.auc = T)
+#Doesn't improve fit much to remove outliers
+
+summary(credit$Cred_Amnt)
+summary(credit)
+
+train = credit[train_obs,]
+test = credit[test_obs,]
+
+m = step(glm(Default ~., data = train, family = "binomial"))
+summary(m)
+plot(m)
+
+m_interact = step(glm(Default ~., data = train, family = "binomial"), scope = . ~ .^2)
+m_interact = glm(Default ~ Cred_Amnt + Gender + Education + Married + Repay_9 + Repay_8 + Repay_7 + Repay_6 + Repay_4 + poly(Bill_4, 3) + poly(Bill_7, 3) + poly(Payment_9, 3) + poly(Payment_8, 3) + poly(Payment_4, 3), data = train, family = "binomial")
+summary(m_interact)
+library(pROC)
+auc(train$Default, fitted(m), type = "response")
+roc = plot.roc(x = train$Default, fitted(m), print.auc = T)
+
+auc(train$Default, fitted(m_interact), type = "response")
+roc = plot.roc(x = train$Default, fitted(m_interact), print.auc = T)
+roc = plot.roc(x = test$Default, predict(m_interact, test, type = "response"), print.auc = T)
+
+#AUC for test set
+auc(test$Default, predict(m, test, type = "response"))
+roc = plot.roc(x = test$Default, predict(m, test, type = "response"), print.auc = T)
+               
 test_preds = predict(m, test, type = "response")
 head(test_preds)
+
+test_binary = numeric(length(test_preds))
+threshold_correct = numeric(length(seq(from = 0.1, to = 0.7, by = 0.05)))
+threshold_sens = numeric(length(seq(from = 0.1, to = 0.7, by = 0.05)))
+threshold_spec = numeric(length(seq(from = 0.1, to = 0.7, by = 0.05)))
+j = 1
+
+for(i in seq(from = 0.1, to = 0.7, by = 0.05)){
+  test_binary = numeric(length(test_preds))
+  test_binary[test_preds >= i] = 1
+  threshold_correct[j] = mean(test_binary == test$Default)
+  threshold_sens[j] = mean(test_binary[test$Default == 1] == 1)
+  threshold_spec[j] = mean(test_binary[test$Default == 0] == 0)
+  j = j + 1
+}
+
+names(threshold_correct) = seq(from = 0.1, to = 0.7, by = 0.05)
+names(threshold_sens) = seq(from = 0.1, to = 0.7, by = 0.05)
+names(threshold_spec) = seq(from = 0.1, to = 0.7, by = 0.05)
+threshold_errors
+threshold_sens
+threshold_spec
+
 test_preds[test_preds >= 0.25] = 1
 test_preds[test_preds < 0.25] = 0
-mean(test_preds != test$default.payment.next.month)
-mean(test_preds[test$default.payment.next.month == 1] != 1)
-mean(test_preds[test$default.payment.next.month == 0] != 0)
+mean(test_preds != test$Default)
+mean(test_preds[test$Default == 1] != 1)
+mean(test_preds[test$Default == 0] != 0)
 
-##################### LDA ######################
-library(MASS)
-lda.fit1=lda(Default ~ Cred_Amnt + Gender + Education + Married + Repay_9 + Bill_7 + 
-         Bill_4 + Payment_9 + Payment_8 + Payment_4,data=train)
-lda.fit1
-# Call:
-#   lda(Default ~ Cred_Amnt + Gender + Education + Married + Repay_9 + 
-#         Bill_7 + Bill_4 + Payment_9 + Payment_8 + Payment_4, data = train)
-# 
-# Prior probabilities of groups:
-#   0      1 
-# 0.7766 0.2234 
-# 
-# Group means:
-#   Cred_Amnt   Gender2 Education1 Education2 Education3  Married1  Married2  Repay_91
-# 0  177670.4 0.6174994  0.3626062  0.4646536  0.1542622 0.4485578 0.5386943 0.1050734
-# 1  130590.3 0.5669203  0.2987914  0.5067144  0.1893465 0.4876902 0.4986571 0.1929275
-# Repay_92    Repay_93     Repay_94     Repay_95     Repay_96    Repay_97     Repay_98
-# 0 0.03425187 0.003283544 0.0009013649 0.0005150657 0.0001931496 0.000000000 0.0002575328
-# 1 0.27775291 0.038943599 0.0080572963 0.0020143241 0.0011190689 0.001119069 0.0017905103
-# Bill_7   Bill_4 Payment_9 Payment_8 Payment_4
-# 0 47685.61 39092.87  6306.659  6630.712  5792.977
-# 1 45230.58 38133.16  3282.307  3264.247  3461.305
-# 
-# Coefficients of linear discriminants:
-#   LD1
-# Cred_Amnt  -1.462707e-06
-# Gender2    -1.574946e-01
-# Education1  6.965580e-01
-# Education2  7.159993e-01
-# Education3  7.410100e-01
-# Married1    1.499651e-01
-# Married2   -2.038142e-02
-# Repay_91    1.185175e+00
-# Repay_92    3.267238e+00
-# Repay_93    3.652480e+00
-# Repay_94    3.307964e+00
-# Repay_95    2.166807e+00
-# Repay_96    2.782393e+00
-# Repay_97    5.061969e+00
-# Repay_98    2.975444e+00
-# Bill_7      5.781399e-07
-# Bill_4     -2.477438e-07
-# Payment_9  -3.494396e-06
-# Payment_8  -1.860765e-06
-# Payment_4  -1.047642e-06
-plot(lda.fit1)
+#Plots with releveled variables
+barplot(height = c(sum(credit$Default[credit$Gender == 1] == 1)/sum(credit$Gender == 1), sum(credit$Default[credit$Gender == 2] == 1)/sum(credit$Gender == 2)), names.arg = c("Men", "Women"), main = "Default Rate by Gender", ylab = "Default Rate", xlab = "Gender", ylim = c(0,0.25), col = "purple")
+barplot(height = c(sum(credit$Default[credit$Education == 1] == 1)/sum(credit$Education == 1), sum(credit$Default[credit$Education == 2] == 1)/sum(credit$Education == 2), sum(credit$Default[credit$Education == 3] == 1)/sum(credit$Education == 3), sum(credit$Default[credit$Education == 0] == 1)/sum(credit$Education == 0)), names.arg = c("Graduate", "College", "High School", "Other"), main = "Default Rate by Educational Attainment", ylab = "Default Rate", xlab = "Education", ylim = c(0,0.3), col = "red")
+barplot(height = c(sum(credit$Default[credit$Married == 1] == 1)/sum(credit$Married == 1), sum(credit$Default[credit$Married == 2] == 1)/sum(credit$Married == 2), sum(credit$Default[credit$Married == 3] == 1)/sum(credit$Married == 3)), names.arg = c("Married", "Single", "Other"), main = "Default Rate by Marital Status", ylab = "Default Rate", xlab = "Marital Status", ylim = c(0,0.25), col = "Blue")
 
-lda.pred=predict(lda.fit1,test)
-names(lda.pred)
-lda.class=lda.pred$class
-Default.test=test$Default
-table(lda.class,Default.test)
+#Repayment
+barplot(height = c(sum(credit$Default[credit$Repay_9 == 1] == 1)/sum(credit$Repay_9 == 1), sum(credit$Default[credit$Repay_9 == 2] == 1)/sum(credit$Repay_9 == 2), sum(credit$Default[credit$Repay_9 == 3] == 1)/sum(credit$Repay_9 == 3), sum(credit$Default[credit$Repay_9 == 4] == 1)/sum(credit$Repay_9 == 4), sum(credit$Default[credit$Repay_9 == 0] == 1)/sum(credit$Repay_9 == 0)), names.arg = c("1 Month", "2 Months", "3 Months", "> 4 Months", "Up to Date"), main = "Default Rate by Payment Status in September", ylab = "Default Rate", xlab = "Number of Months Late", ylim = c(0,1), col = "cyan")
+barplot(height = c(sum(credit$Default[credit$Repay_8 == 1] == 1)/sum(credit$Repay_8 == 1), sum(credit$Default[credit$Repay_8 == 2] == 1)/sum(credit$Repay_8 == 2), sum(credit$Default[credit$Repay_8 == 3] == 1)/sum(credit$Repay_8 == 3), sum(credit$Default[credit$Repay_8 == 4] == 1)/sum(credit$Repay_8 == 4), sum(credit$Default[credit$Repay_8 == 0] == 1)/sum(credit$Repay_8 == 0)), names.arg = c("1 Month", "2 Months", "3 Months", "> 4 Months", "Up to Date"), main = "Default Rate by Payment Status in August", ylab = "Default Rate", xlab = "Number of Months Late", ylim = c(0,1), col = "cyan")
+barplot(height = c(sum(credit$Default[credit$Repay_7 == 1] == 1)/sum(credit$Repay_7 == 1), sum(credit$Default[credit$Repay_7 == 2] == 1)/sum(credit$Repay_7 == 2), sum(credit$Default[credit$Repay_7 == 3] == 1)/sum(credit$Repay_7 == 3), sum(credit$Default[credit$Repay_7 == 4] == 1)/sum(credit$Repay_7 == 4), sum(credit$Default[credit$Repay_7 == 0] == 1)/sum(credit$Repay_7 == 0)), names.arg = c("1 Month", "2 Months", "3 Months", "> 4 Months", "Up to Date"), main = "Default Rate by Payment Status in July", ylab = "Default Rate", xlab = "Number of Months Late", ylim = c(0,1), col = "cyan")
+barplot(height = c(sum(credit$Default[credit$Repay_6 == 1] == 1)/sum(credit$Repay_6 == 1), sum(credit$Default[credit$Repay_6 == 2] == 1)/sum(credit$Repay_6 == 2), sum(credit$Default[credit$Repay_6 == 3] == 1)/sum(credit$Repay_6 == 3), sum(credit$Default[credit$Repay_6 == 4] == 1)/sum(credit$Repay_6 == 4), sum(credit$Default[credit$Repay_6 == 0] == 1)/sum(credit$Repay_6 == 0)), names.arg = c("1 Month", "2 Months", "3 Months", "> 4 Months", "Up to Date"), main = "Default Rate by Payment Status in June", ylab = "Default Rate", xlab = "Number of Months Late", ylim = c(0,1), col = "cyan")
+barplot(height = c(sum(credit$Default[credit$Repay_5 == 1] == 1)/sum(credit$Repay_5 == 1), sum(credit$Default[credit$Repay_5 == 2] == 1)/sum(credit$Repay_5 == 2), sum(credit$Default[credit$Repay_5 == 3] == 1)/sum(credit$Repay_5 == 3), sum(credit$Default[credit$Repay_5 == 4] == 1)/sum(credit$Repay_5 == 4), sum(credit$Default[credit$Repay_5 == 0] == 1)/sum(credit$Repay_5 == 0)), names.arg = c("1 Month", "2 Months", "3 Months", "> 4 Months", "Up to Date"), main = "Default Rate by Payment Status in May", ylab = "Default Rate", xlab = "Number of Months Late", ylim = c(0,1), col = "cyan")
+barplot(height = c(sum(credit$Default[credit$Repay_4 == 1] == 1)/sum(credit$Repay_4 == 1), sum(credit$Default[credit$Repay_4 == 2] == 1)/sum(credit$Repay_4 == 2), sum(credit$Default[credit$Repay_4 == 3] == 1)/sum(credit$Repay_4 == 3), sum(credit$Default[credit$Repay_4 == 4] == 1)/sum(credit$Repay_4 == 4), sum(credit$Default[credit$Repay_4 == 0] == 1)/sum(credit$Repay_4 == 0)), names.arg = c("1 Month", "2 Months", "3 Months", "> 4 Months", "Up to Date"), main = "Default Rate by Payment Status in April", ylab = "Default Rate", xlab = "Number of Months Late", ylim = c(0,1), col = "cyan")
 
-lda.pred=predict(lda.fit,test[,-24])
-mean(lda.pred$class!=test[,24])
-#           Default.test
-# lda.class    0    1
-          # 0 7492 1469
-          # 1  340  699
-# error rate = (340+1469)/(7492+1469+340+699)=0.1809
-# 340/(340+7492)= 0.043
-# 1569/(1468+1469)= 0.534
+#Boxplots, Limit default vs non-default
+boxplot(credit$Cred_Amnt ~ credit$Default, main = "Credit Limit", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+#Bill, default vs non-default
+par(mfrow = c(2,3))
+boxplot(credit$Bill_9 ~ credit$Default, main = "Bill in September", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Bill_8 ~ credit$Default, main = "Bill in August", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Bill_7 ~ credit$Default, main = "Bill in July", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Bill_6 ~ credit$Default, main = "Bill in June", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Bill_5 ~ credit$Default, main = "Bill in May", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Bill_4 ~ credit$Default, main = "Bill in April", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+par(new = F, mfrow = c(1,1))
+#Payment, default vs non-default
+#Think about constructing variable for Bill less Payment for each month
+boxplot(credit$Payment_9 ~ credit$Default, main = "Payment in September", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Payment_8 ~ credit$Default, main = "Payment in August", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Payment_7 ~ credit$Default, main = "Payment in July", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Payment_6 ~ credit$Default, main = "Payment in June", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Payment_5 ~ credit$Default, main = "Payment in May", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Payment_4 ~ credit$Default, main = "Payment in April", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+
+#Constructing Differences Between Bill Amount and Payment
+credit$Diff_9 = credit$Bill_9 - credit$Payment_9
+credit$Diff_8 = credit$Bill_8 - credit$Payment_8
+credit$Diff_7 = credit$Bill_7 - credit$Payment_7
+credit$Diff_6 = credit$Bill_6 - credit$Payment_6
+credit$Diff_5 = credit$Bill_5 - credit$Payment_5
+credit$Diff_4 = credit$Bill_4 - credit$Payment_4
+
+boxplot(credit$Diff_9 ~ credit$Default, main = "Difference In Bill and Payment in September", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Diff_8 ~ credit$Default, main = "Difference In Bill and Payment in August", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Diff_7 ~ credit$Default, main = "Difference In Bill and Payment in July", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Diff_6 ~ credit$Default, main = "Difference In Bill and Payment in June", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Diff_5 ~ credit$Default, main = "Difference In Bill and Payment in May", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
+boxplot(credit$Diff_4 ~ credit$Default, main = "Difference In Bill and Payment in April", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
