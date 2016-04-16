@@ -215,10 +215,20 @@ test = credit[test_obs,]
 
 m = step(glm(Default ~., data = train, family = "binomial"))
 summary(m)
+m = glm(Default ~ Cred_Amnt + Gender + Education + Married + Repay_9 + Repay_8 + Repay_7 + Repay_6 + Repay_4 + Bill_7 + Bill_4 + Payment_9 + Payment_8 + Payment_4, data = train, family = "binomial")
+summary(m)
 plot(m)
 
-m_interact = step(glm(Default ~., data = train, family = "binomial"), scope = . ~ .^2)
-m_interact = glm(Default ~ Cred_Amnt + Gender + Education + Married + Repay_9 + Repay_8 + Repay_7 + Repay_6 + Repay_4 + poly(Bill_4, 3) + poly(Bill_7, 3) + poly(Payment_9, 3) + poly(Payment_8, 3) + poly(Payment_4, 3), data = train, family = "binomial")
+#Tried Repay and Bill 4
+#Tried Repay 7 and Bill 7
+#Tried Bill 
+m_int_aic = step(glm(Default ~  Cred_Amnt:Bill_7 + Cred_Amnt:Bill_4 + Cred_Amnt:Payment_9 + Cred_Amnt:Payment_8 + Cred_Amnt:Payment_4 + Gender:Bill_7 + Gender:Bill_4 + Gender:Payment_9 + Gender:Payment_8 + Gender:Payment_4 + Education:Bill_7 + Education:Bill_4 + Education:Payment_9 + Education:Payment_8 + Education:Payment_4 + Married:Bill_7 + Married:Bill_4 + Married:Payment_9 + Married:Payment_8 + Married:Payment_4 + Gender + Education + Married + Repay_9 + Repay_8 + Bill_7 + Repay_7 + Repay_6 + Repay_4 + Bill_4 + Payment_9 + Payment_8 + Payment_4, data = train, family = "binomial"), direction = "backward")
+m_interact = glm(formula = Default ~ Gender + Education + Cred_Amnt + Married + Repay_9 + 
+                   Repay_8 + Bill_7 + Repay_7 + Repay_6 + Repay_4 + Bill_4 + 
+                   Payment_9 + Payment_8 + Payment_4 + Bill_4:Cred_Amnt + Payment_9:Cred_Amnt + 
+                   Payment_8:Cred_Amnt + Gender:Payment_4 + Education:Bill_7 + 
+                   Education:Payment_9 + Education:Payment_8 + Married:Payment_9 + 
+                   Married:Payment_4, family = "binomial", data = train)
 summary(m_interact)
 library(pROC)
 auc(train$Default, fitted(m), type = "response")
@@ -253,7 +263,7 @@ for(i in seq(from = 0.1, to = 0.7, by = 0.05)){
 names(threshold_correct) = seq(from = 0.1, to = 0.7, by = 0.05)
 names(threshold_sens) = seq(from = 0.1, to = 0.7, by = 0.05)
 names(threshold_spec) = seq(from = 0.1, to = 0.7, by = 0.05)
-threshold_errors
+threshold_correct
 threshold_sens
 threshold_spec
 
@@ -262,6 +272,33 @@ test_preds[test_preds < 0.25] = 0
 mean(test_preds != test$Default)
 mean(test_preds[test$Default == 1] != 1)
 mean(test_preds[test$Default == 0] != 0)
+
+
+#Test Errors with interactions
+test_preds = predict(m_interact, test, type = "response")
+head(test_preds)
+
+test_binary = numeric(length(test_preds))
+threshold_correct = numeric(length(seq(from = 0.1, to = 0.7, by = 0.05)))
+threshold_sens = numeric(length(seq(from = 0.1, to = 0.7, by = 0.05)))
+threshold_spec = numeric(length(seq(from = 0.1, to = 0.7, by = 0.05)))
+j = 1
+
+for(i in seq(from = 0.1, to = 0.7, by = 0.05)){
+  test_binary = numeric(length(test_preds))
+  test_binary[test_preds >= i] = 1
+  threshold_correct[j] = mean(test_binary == test$Default)
+  threshold_sens[j] = mean(test_binary[test$Default == 1] == 1)
+  threshold_spec[j] = mean(test_binary[test$Default == 0] == 0)
+  j = j + 1
+}
+
+names(threshold_correct) = seq(from = 0.1, to = 0.7, by = 0.05)
+names(threshold_sens) = seq(from = 0.1, to = 0.7, by = 0.05)
+names(threshold_spec) = seq(from = 0.1, to = 0.7, by = 0.05)
+threshold_correct
+threshold_sens
+threshold_spec
 
 #Plots with releveled variables
 barplot(height = c(sum(credit$Default[credit$Gender == 1] == 1)/sum(credit$Gender == 1), sum(credit$Default[credit$Gender == 2] == 1)/sum(credit$Gender == 2)), names.arg = c("Men", "Women"), main = "Default Rate by Gender", ylab = "Default Rate", xlab = "Gender", ylim = c(0,0.25), col = "purple")
@@ -311,66 +348,7 @@ boxplot(credit$Diff_6 ~ credit$Default, main = "Difference In Bill and Payment i
 boxplot(credit$Diff_5 ~ credit$Default, main = "Difference In Bill and Payment in May", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
 boxplot(credit$Diff_4 ~ credit$Default, main = "Difference In Bill and Payment in April", ylab = "Taiwanese Dollars (TWD)", names = c("Non-Default", "Default"))
 
-## LDA 
-library(MASS)
-lda.fit1=lda(Default ~ Cred_Amnt + Gender + Education + Married + Repay_9 + Bill_7 + 
-         Bill_4 + Payment_9 + Payment_8 + Payment_4,data=train)
-lda.fit1
-# Call:
-#   lda(Default ~ Cred_Amnt + Gender + Education + Married + Repay_9 + 
-#         Bill_7 + Bill_4 + Payment_9 + Payment_8 + Payment_4, data = train)
-# 
-# Prior probabilities of groups:
-#   0      1 
-# 0.7766 0.2234 
-# 
-# Group means:
-#   Cred_Amnt   Gender2 Education1 Education2 Education3  Married1  Married2  Repay_91
-# 0  177670.4 0.6174994  0.3626062  0.4646536  0.1542622 0.4485578 0.5386943 0.1050734
-# 1  130590.3 0.5669203  0.2987914  0.5067144  0.1893465 0.4876902 0.4986571 0.1929275
-# Repay_92    Repay_93     Repay_94     Repay_95     Repay_96    Repay_97     Repay_98
-# 0 0.03425187 0.003283544 0.0009013649 0.0005150657 0.0001931496 0.000000000 0.0002575328
-# 1 0.27775291 0.038943599 0.0080572963 0.0020143241 0.0011190689 0.001119069 0.0017905103
-# Bill_7   Bill_4 Payment_9 Payment_8 Payment_4
-# 0 47685.61 39092.87  6306.659  6630.712  5792.977
-# 1 45230.58 38133.16  3282.307  3264.247  3461.305
-# 
-# Coefficients of linear discriminants:
-#   LD1
-# Cred_Amnt  -1.462707e-06
-# Gender2    -1.574946e-01
-# Education1  6.965580e-01
-# Education2  7.159993e-01
-# Education3  7.410100e-01
-# Married1    1.499651e-01
-# Married2   -2.038142e-02
-# Repay_91    1.185175e+00
-# Repay_92    3.267238e+00
-# Repay_93    3.652480e+00
-# Repay_94    3.307964e+00
-# Repay_95    2.166807e+00
-# Repay_96    2.782393e+00
-# Repay_97    5.061969e+00
-# Repay_98    2.975444e+00
-# Bill_7      5.781399e-07
-# Bill_4     -2.477438e-07
-# Payment_9  -3.494396e-06
-# Payment_8  -1.860765e-06
-# Payment_4  -1.047642e-06
-plot(lda.fit1)
+library(e1071)
+svmfit = svm(Default~., data = train, kernel = "linear", cost = 5, scale = F)
 
-lda.pred=predict(lda.fit1,test)
-names(lda.pred)
-lda.class=lda.pred$class
-Default.test=test$Default
-table(lda.class,Default.test)
 
-lda.pred=predict(lda.fit,test[,-24])
-mean(lda.pred$class!=test[,24])
-#           Default.test
-# lda.class    0    1
-          # 0 7492 1469
-          # 1  340  699
-# error rate = (340+1469)/(7492+1469+340+699)=0.1809
-# 340/(340+7492)= 0.043
-# 1469/(1469+699)= 0.678
